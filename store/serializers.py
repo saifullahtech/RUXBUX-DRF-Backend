@@ -1,7 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import Order, Address
+from .models import Address, CustomerReview, Order, ReviewAttachment
 
 
 def calculate_order_amounts(quantity):
@@ -165,4 +165,79 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "address",
+        ]
+
+
+class ReviewAttachmentSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ReviewAttachment
+        fields = [
+            "id",
+            "image",
+            "image_url",
+            "alt_text",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+    def get_image_url(self, obj):
+        if not obj.image:
+            return None
+
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(obj.image.url)
+
+        return obj.image.url
+
+
+class CustomerReviewCreateSerializer(serializers.ModelSerializer):
+    images = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True,
+        required=False,
+        allow_empty=True,
+    )
+    attachments = ReviewAttachmentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CustomerReview
+        fields = [
+            "id",
+            "stars",
+            "name",
+            "email",
+            "text",
+            "images",
+            "attachments",
+            "created_at",
+        ]
+        read_only_fields = ["id", "attachments", "created_at"]
+
+    @transaction.atomic
+    def create(self, validated_data):
+        images = validated_data.pop("images", [])
+        review = CustomerReview.objects.create(**validated_data)
+
+        for image in images:
+            ReviewAttachment.objects.create(review=review, image=image)
+
+        return review
+
+
+class CustomerReviewListSerializer(serializers.ModelSerializer):
+    attachments = ReviewAttachmentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CustomerReview
+        fields = [
+            "id",
+            "stars",
+            "name",
+            "email",
+            "text",
+            "attachments",
+            "created_at",
         ]

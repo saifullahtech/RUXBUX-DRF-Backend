@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-43nel1(wpy=2mz1get^lh+=v4+cifk2$i8e1wc+&=6lar1_l2j'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     "ruxbux.com",
@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "corsheaders",
 
     "store",
+    "mailer",
 ]
 
 MIDDLEWARE = [
@@ -147,3 +148,31 @@ CSRF_TRUSTED_ORIGINS = [
     "https://www.ruxbux.com",
     "http://46.202.93.99",
 ]
+
+
+
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = "ruxbuxofficial@gmail.com"
+EMAIL_HOST_PASSWORD = "qyvyzykokzoczjko"
+
+DEFAULT_FROM_EMAIL = "RUXBUX <ruxbuxofficial@gmail.com>"
+REVIEW_NOTIFICATION_EMAIL = "ruxbuxofficial@gmail.com"
+RUXBUX_MANAGEMENT_EMAIL = "ruxbuxofficial@gmail.com"
+FRONTEND_BASE_URL = "http://127.0.0.1:3000"
+
+
+
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+CELERY_TIMEZONE = "Asia/Karachi"

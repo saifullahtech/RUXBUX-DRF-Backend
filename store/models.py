@@ -1,9 +1,7 @@
-from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
 
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
-from django.core.validators import RegexValidator
 
 
 
@@ -114,3 +112,47 @@ class Address(models.Model):
 
     def __str__(self):
         return f"{self.full_name} - {self.city}"
+
+
+class CustomerReview(models.Model):
+    stars = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    name = models.CharField(max_length=80)
+    email = models.EmailField()
+    text = models.TextField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        verbose_name = "Customer Review"
+        verbose_name_plural = "Customer Reviews"
+
+    def __str__(self):
+        return f"{self.stars} stars by {self.name}"
+
+
+def review_upload_path(instance, filename: str) -> str:
+    ext = filename.split(".")[-1].lower()
+    return f"reviews/{instance.review_id}/{uuid.uuid4().hex}.{ext}"
+
+
+class ReviewAttachment(models.Model):
+    review = models.ForeignKey(
+        CustomerReview,
+        on_delete=models.CASCADE,
+        related_name="attachments",
+    )
+    image = models.ImageField(upload_to=review_upload_path)
+    alt_text = models.CharField(max_length=120, blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("created_at",)
+        verbose_name = "Review Attachment"
+        verbose_name_plural = "Review Attachments"
+
+    def __str__(self):
+        return f"Attachment #{self.pk} for Review #{self.review_id}"

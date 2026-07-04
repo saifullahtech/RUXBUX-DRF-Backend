@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Address, Order
+from .models import Address, CustomerReview, Order, ReviewAttachment
 
 
 admin.site.site_header = "RUXBUX Admin"
@@ -22,6 +22,23 @@ class AddressInline(admin.StackedInline):
         ("Address", {"fields": ("address", "city")}),
         ("Meta", {"fields": ("created_at",)}),
     )
+
+
+class ReviewAttachmentInline(admin.TabularInline):
+    model = ReviewAttachment
+    extra = 1
+    readonly_fields = ("image_preview", "created_at")
+    fields = ("image", "image_preview", "alt_text", "created_at")
+
+    @admin.display(description="Preview")
+    def image_preview(self, obj):
+        if not obj.pk or not obj.image:
+            return "-"
+
+        return format_html(
+            '<img src="{}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;" />',
+            obj.image.url,
+        )
 
 
 @admin.register(Order)
@@ -107,6 +124,79 @@ class OrderAdmin(admin.ModelAdmin):
     @admin.display(description="Session", ordering="session_key")
     def session_key_short(self, obj):
         return (obj.session_key[:10] + "...") if obj.session_key else "-"
+
+
+@admin.register(CustomerReview)
+class CustomerReviewAdmin(admin.ModelAdmin):
+    inlines = [ReviewAttachmentInline]
+
+    list_display = (
+        "id",
+        "stars",
+        "name",
+        "email",
+        "attachment_count",
+        "created_at",
+    )
+    list_display_links = ("id", "name")
+    ordering = ("-created_at",)
+    list_filter = (
+        "stars",
+        ("created_at", admin.DateFieldListFilter),
+    )
+    search_fields = (
+        "name",
+        "email",
+        "text",
+        "attachments__alt_text",
+    )
+    readonly_fields = ("created_at",)
+    date_hierarchy = "created_at"
+    list_per_page = 50
+    show_full_result_count = False
+
+    fieldsets = (
+        ("Rating", {"fields": ("stars",)}),
+        ("Customer", {"fields": ("name", "email")}),
+        ("Review", {"fields": ("text",)}),
+        ("Meta", {"fields": ("created_at",)}),
+    )
+
+    @admin.display(description="Images")
+    def attachment_count(self, obj):
+        return obj.attachments.count()
+
+
+@admin.register(ReviewAttachment)
+class ReviewAttachmentAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "review",
+        "image_preview",
+        "alt_text",
+        "created_at",
+    )
+    list_display_links = ("id", "image_preview")
+    ordering = ("-created_at",)
+    list_filter = (("created_at", admin.DateFieldListFilter),)
+    search_fields = (
+        "review__name",
+        "review__email",
+        "review__text",
+        "alt_text",
+    )
+    readonly_fields = ("image_preview", "created_at")
+    fields = ("review", "image", "image_preview", "alt_text", "created_at")
+
+    @admin.display(description="Preview")
+    def image_preview(self, obj):
+        if not obj.pk or not obj.image:
+            return "-"
+
+        return format_html(
+            '<img src="{}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;" />',
+            obj.image.url,
+        )
 
 
 @admin.register(Address)
