@@ -54,7 +54,7 @@ class Order(models.Model):
     status = models.CharField(
         max_length=16,
         choices=STATUS_CHOICES,
-        default=STATUS_PENDING,
+        default=STATUS_CONFIRMED,
         db_index=True,
     )
 
