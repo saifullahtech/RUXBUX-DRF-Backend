@@ -48,6 +48,8 @@ class OrderCreateEmailTaskTests(TestCase):
 
         order = Order.objects.get()
         self.assertEqual(order.email, "customer@example.com")
+        self.assertRegex(response.data["public_id"], r"^\d{6}$")
+        self.assertEqual(order.public_id, response.data["public_id"])
         self.assertEqual(len(callbacks), 1)
         delay_mock.assert_called_once_with(order.id)
 
@@ -92,6 +94,30 @@ class OrderCreateEmailTaskTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(Order.objects.count(), 1)
         delay_mock.assert_called_once()
+
+    def test_order_detail_uses_six_digit_public_id(self):
+        order = Order.objects.create(
+            quantity=6,
+            subtotal_amount=1400,
+            shipping_amount=250,
+            total_amount=1650,
+        )
+        Address.objects.create(
+            order=order,
+            full_name="Ali Khan",
+            phone="+923001234567",
+            address="House 1, Street 2",
+            city="Karachi",
+        )
+
+        self.assertRegex(order.public_id, r"^\d{6}$")
+
+        response = self.client.get(
+            reverse("order-detail", kwargs={"public_id": order.public_id})
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["public_id"], order.public_id)
 
 
 @override_settings(

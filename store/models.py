@@ -1,8 +1,25 @@
 import uuid
+from random import randint
 
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 
+
+def generate_public_order_id():
+    for _ in range(100):
+        public_id = str(randint(100000, 999999))
+        if not Order.objects.filter(public_id=public_id).exists():
+            return public_id
+
+    latest_id = Order.objects.order_by("-id").values_list("id", flat=True).first() or 0
+    start = (latest_id % 900000) + 100000
+
+    for offset in range(900000):
+        public_id = str(((start - 100000 + offset) % 900000) + 100000)
+        if not Order.objects.filter(public_id=public_id).exists():
+            return public_id
+
+    raise RuntimeError("No available 6-digit public order IDs.")
 
 
 class Order(models.Model):
@@ -20,11 +37,18 @@ class Order(models.Model):
         (STATUS_CANCELED, "Canceled"),
     ]
 
-    public_id = models.UUIDField(
-        default=uuid.uuid4,
+    public_id = models.CharField(
+        max_length=6,
+        default=generate_public_order_id,
         editable=False,
         unique=True,
         db_index=True,
+        validators=[
+            RegexValidator(
+                regex=r"^\d{6}$",
+                message="Public order ID must be a 6-digit number.",
+            )
+        ],
     )
 
     session_key = models.CharField(

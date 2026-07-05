@@ -116,7 +116,7 @@ class OrderCreateSerializer(serializers.Serializer):
     def to_representation(self, instance):
         return {
             "id": instance.id,
-            "public_id": str(instance.public_id),
+            "public_id": instance.public_id,
             "quantity": instance.quantity,
             "subtotal_amount": instance.subtotal_amount,
             "shipping_amount": instance.shipping_amount,
