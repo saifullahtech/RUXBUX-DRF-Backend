@@ -162,6 +162,30 @@ class CustomerReviewAPITests(TestCase):
         self.assertEqual(response.data["stars"], 5)
         self.assertEqual(len(response.data["attachments"]), 1)
 
+    def test_create_review_does_not_require_csrf_when_session_cookie_exists(self):
+        user_model = get_user_model()
+        user_model.objects.create_user(
+            username="review-staff",
+            password="test-password",
+            is_staff=True,
+        )
+        client = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(client.login(username="review-staff", password="test-password"))
+
+        response = client.post(
+            reverse("review-create"),
+            {
+                "stars": 5,
+                "name": "Ali",
+                "email": "ali@example.com",
+                "text": "Great product",
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(CustomerReview.objects.count(), 1)
+
     def test_review_summary_returns_star_counts(self):
         CustomerReview.objects.create(
             stars=5,

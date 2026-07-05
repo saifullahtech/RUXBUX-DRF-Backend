@@ -58,6 +58,7 @@ class CustomerReviewCreateAPIView(CreateAPIView):
     queryset = CustomerReview.objects.prefetch_related("attachments").all()
     serializer_class = CustomerReviewCreateSerializer
     permission_classes = [AllowAny]
+    authentication_classes = []
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def get_serializer(self, *args, **kwargs):
