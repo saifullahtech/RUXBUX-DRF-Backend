@@ -2,6 +2,7 @@ import shutil
 import tempfile
 from unittest.mock import patch
 
+from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -67,6 +68,30 @@ class OrderCreateEmailTaskTests(TestCase):
         self.assertEqual(Order.objects.count(), 1)
         delay_mock.assert_called_once()
         logger_mock.assert_called_once()
+
+    @patch("store.views.send_order_created_emails_task.delay")
+    def test_order_create_does_not_require_csrf_when_session_cookie_exists(
+        self, delay_mock
+    ):
+        user_model = get_user_model()
+        user_model.objects.create_user(
+            username="staff",
+            password="test-password",
+            is_staff=True,
+        )
+        client = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(client.login(username="staff", password="test-password"))
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = client.post(
+                reverse("order-create"),
+                self._order_payload(),
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Order.objects.count(), 1)
+        delay_mock.assert_called_once()
 
 
 @override_settings(

@@ -32,6 +32,7 @@ class OrderCreateAPIView(CreateAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderCreateSerializer
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def perform_create(self, serializer):
         order = serializer.save()
