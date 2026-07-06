@@ -41,6 +41,16 @@ def calculate_order_amounts(quantity):
             "discount_amount": 1764,
             "shipping_amount": 0,
         },
+        42: {
+            "subtotal_amount": 9800,
+            "discount_amount": 2352,
+            "shipping_amount": 0,
+        },
+        48: {
+            "subtotal_amount": 11200,
+            "discount_amount": 2800,
+            "shipping_amount": 0,
+        },
     }
 
     if quantity not in pricing_table:
@@ -79,11 +89,11 @@ class OrderCreateSerializer(serializers.Serializer):
     city = serializers.CharField(max_length=80)
 
     def validate_quantity(self, value):
-        allowed_quantities = [6, 12, 18, 24, 30, 36]
+        allowed_quantities = [6, 12, 18, 24, 30, 36, 42, 48]
 
         if value not in allowed_quantities:
             raise serializers.ValidationError(
-                "Quantity must be one of: 6, 12, 18, 24, 30, 36."
+                "Quantity must be one of: 6, 12, 18, 24, 30, 36, 42, 48."
             )
 
         return value

@@ -51,7 +51,7 @@ class OrderCreateEmailTaskTests(TestCase):
         self.assertRegex(response.data["public_id"], r"^\d{6}$")
         self.assertEqual(order.public_id, response.data["public_id"])
         self.assertEqual(len(callbacks), 1)
-        delay_mock.assert_called_once_with(order.id)
+        delay_mock.assert_called_once_with(str(order.pk))
 
     @patch(
         "store.views.send_order_created_emails_task.delay",
@@ -139,14 +139,49 @@ class OrderEmailTaskTests(TestCase):
             city="Karachi",
         )
 
-        result = send_order_created_emails_task(order.id)
+        result = send_order_created_emails_task(str(order.pk))
 
         self.assertTrue(result)
         send_mock.assert_called_once()
         call_kwargs = send_mock.call_args.kwargs
         self.assertEqual(call_kwargs["to_emails"], ["staff@example.com"])
         self.assertIn("Customer email: Not provided", call_kwargs["message"])
-        self.assertIn("http://frontend.test/order-success/", call_kwargs["message"])
+        self.assertIn(
+            f"http://frontend.test/order-success/{order.public_id}",
+            call_kwargs["message"],
+        )
+
+    @patch("store.tasks.send_app_email", return_value=True)
+    def test_task_accepts_public_id_without_uuid_error(self, send_mock):
+        order = Order.objects.create(
+            email="customer@example.com",
+            quantity=6,
+            total_amount=1650,
+        )
+        Address.objects.create(
+            order=order,
+            full_name="Ali Khan",
+            phone="+923001234567",
+            address="House 1, Street 2",
+            city="Karachi",
+        )
+
+        result = send_order_created_emails_task(order.public_id)
+
+        self.assertTrue(result)
+        self.assertEqual(send_mock.call_count, 2)
+        management_call = send_mock.call_args_list[0].kwargs
+        customer_call = send_mock.call_args_list[1].kwargs
+        self.assertEqual(management_call["to_emails"], ["staff@example.com"])
+        self.assertEqual(customer_call["to_emails"], ["customer@example.com"])
+        self.assertIn(f"Order ID: #{order.public_id}", management_call["message"])
+
+    @patch("store.tasks.send_app_email")
+    def test_task_skips_missing_or_invalid_order_reference(self, send_mock):
+        result = send_order_created_emails_task("not-a-uuid-or-pk")
+
+        self.assertFalse(result)
+        send_mock.assert_not_called()
 
 
 @override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT, ALLOWED_HOSTS=["testserver"])

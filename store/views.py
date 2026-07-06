@@ -37,7 +37,7 @@ class OrderCreateAPIView(CreateAPIView):
     def perform_create(self, serializer):
         order = serializer.save()
         transaction.on_commit(
-            lambda: _enqueue_order_created_emails(order.id)
+            lambda: _enqueue_order_created_emails(str(order.pk))
         )
 
 

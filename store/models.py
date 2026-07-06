@@ -63,7 +63,7 @@ class Order(models.Model):
     quantity = models.PositiveSmallIntegerField(
         validators=[
             MinValueValidator(1),
-            MaxValueValidator(36),
+            MaxValueValidator(48),
         ]
     )
 

@@ -10,27 +10,39 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
+
+
+def env_bool(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.lower() in {"1", "true", "yes", "on"}
+
+
+def env_list(name, default=None):
+    value = os.environ.get(name)
+    if value is None:
+        return default or []
+    return [item.strip() for item in value.split(",") if item.strip()]
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-43nel1(wpy=2mz1get^lh+=v4+cifk2$i8e1wc+&=6lar1_l2j'
+SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = env_bool("DEBUG", False)
 
-ALLOWED_HOSTS = [
-    "ruxbux.com",
-    "www.ruxbux.com",
-    "46.202.93.99",
-    "localhost",
-    "127.0.0.1",
-]
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS")
 
 
 # Application definition
@@ -135,41 +147,37 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 
-CORS_ALLOWED_ORIGINS = [
-    "https://ruxbux.com",
-    "https://www.ruxbux.com",
-    "http://localhost:3000",
-]
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://ruxbux.com",
-    "https://www.ruxbux.com",
-]
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
 
 
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 
-EMAIL_HOST_USER = "ruxbuxofficial@gmail.com"
-EMAIL_HOST_PASSWORD = "qyvyzykokzoczjko"
+EMAIL_HOST_USER = os.environ["EMAIL_HOST_USER"]
+EMAIL_HOST_PASSWORD = os.environ["EMAIL_HOST_PASSWORD"]
 
-DEFAULT_FROM_EMAIL = "RUXBUX <ruxbuxofficial@gmail.com>"
-REVIEW_NOTIFICATION_EMAIL = "ruxbuxofficial@gmail.com"
-RUXBUX_MANAGEMENT_EMAIL = "ruxbuxofficial@gmail.com"
-FRONTEND_BASE_URL = "http://127.0.0.1:3000"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", f"RUXBUX <{EMAIL_HOST_USER}>")
+REVIEW_NOTIFICATION_EMAIL = os.environ.get("REVIEW_NOTIFICATION_EMAIL", EMAIL_HOST_USER)
+RUXBUX_MANAGEMENT_EMAIL = os.environ.get("RUXBUX_MANAGEMENT_EMAIL", EMAIL_HOST_USER)
+FRONTEND_BASE_URL = os.environ.get("FRONTEND_BASE_URL", "https://ruxbux.com")
 
 
 
-CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
-CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6379/1")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://127.0.0.1:6379/1")
 
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
+CELERY_TASK_DEFAULT_QUEUE = "ruxbux"
+CELERY_TASK_DEFAULT_EXCHANGE = "ruxbux"
+CELERY_TASK_DEFAULT_ROUTING_KEY = "ruxbux"
 
 CELERY_TIMEZONE = "Asia/Karachi"
